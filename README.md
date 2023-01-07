@@ -1,14 +1,12 @@
 # deepL_beyond_infwidth
 
-This code trains different multilayer perceptrons on regression tasks with quadratic loss function in a teacher-student setting.
+This code trains deep fully connected networks on regression tasks with quadratic loss function in a teacher-student setting.
 
 The script to be run is ```deep_regression.py```.  
 
 ### Arguments
 
-The **mandatory** argument that must passed to ```deep_regression.py```:
-
-**teacher type**. This is the function that will generate the input-output distribution. It can be chosen among: 
+The **mandatory** argument that must passed to ```deep_regression.py```is the **teacher type**. This is the function that will generate the input-output distribution. It can be chosen among: 
   - ```linear``` (linear function) 
   - ```random``` (random data and labels)
   - ```mnist``` (MNIST dataset of handwritten digits)
