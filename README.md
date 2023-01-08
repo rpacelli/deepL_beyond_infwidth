@@ -24,7 +24,7 @@ The optional arguments that can be passed are:
   - ```-Ptest``` (size of the test set) 
   - ```-bs``` (batch size, set to 0 for full batch learning)
   - ```-save_data``` (saves the generate synthetic data distribution) 
-  - ```-resume``` (set true if you wish to resume training data from previous experiments)
+  - ```-resume_data``` (set true if you wish to resume training data from previous experiments)
   
   Training dynamics and checkpoint:
   - ```-opt``` (choose among adam, sgd)
@@ -38,7 +38,8 @@ The optional arguments that can be passed are:
   Theory computation:
   - ```-compute_theory``` (set true to compute theory with the specified trainset (resumed, synthetic or mnist))
   - ```-infwidth``` (set true to compute infinite width theory, the default value is False that will trigger the computation of finite-width theory)
-  
+  - ```-lambda0``` (inverse of squared variance of 1st layer weight at initialisation)
+  - ```-lambda1``` (inverse of squared variance of intermediate layer(s) weight at initialisation)
 
 
 ### Code output
@@ -52,5 +53,3 @@ The script will output a file ```run_P_(value_of_P)_(run_attributes)``` (in the 
 python deep_regression.py mnist -L 3 -N 400 -N1 300 -act relu -compute_theory True -infwidth True
 ```
 This will train a 3hl architecture with relu activation functions and hidden layers of size N1 = 300 on a regression task on the mnist dataset. The data will be coarse grained to a size of 20x20 and the infinite width predicted theory will be computed.
-  
-  
