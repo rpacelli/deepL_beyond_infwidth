@@ -15,7 +15,7 @@ device = utils.find_device(args.device)
 home = utils.os.environ['HOME']
 trainsetFilename = "dummy"
 #CREATION OF MACRO FOLDERS
-mother_dir = './runs/prova/'
+mother_dir = './deepL_beyond_infwidth/runs/'
 utils.make_directory(mother_dir)
 first_subdir = mother_dir + f'teacher_{args.teacher_type}_net_{args.L}hl_opt_{args.opt}_actf_{args.act}/'
 utils.make_directory(first_subdir)
