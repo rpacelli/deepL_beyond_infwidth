@@ -32,6 +32,7 @@ The optional arguments that can be passed are:
   - ```-wd``` (weight decay)
   - ```-epochs``` (number training epochs)
   - ```-checkpoint``` (number of epochs between two checkpoints. at every checkpoint the errors appear at screen and are saved)
+  - ```-device``` (chose the device among cuda and cpu. If cuda (default) is not found the coda will be automatically run on cpu)
   - ```-R``` (a run index. the default value is 0, you can change it if you want more than one run with the same parameters)
   
   Theory computation:
@@ -43,7 +44,7 @@ The optional arguments that can be passed are:
 ### Code output
 
 ```deep_regression.py``` will create folders and output files in the home folder. 
-Change ```mother_dir``` at line ```152``` if you want to modifiy the output folder. The default is ```/home/deepL_beyond_infwidth/runs/``` The script will create folders and subfolders named with to the arguments used.
+Change ```mother_dir``` at line ```152``` if you want to modifiy the output folder. The default is ```/home/deepL_beyond_infwidth/runs/``` The script will create folders and subfolders named after the arguments used.
 The script will output a file ```run_P_(value_of_P)_(run_attributes)``` (in the aforementioned folders) with the specifications of the single run (epoch, train error, test error), and if prompted will also produce a file with the theoretical expected quantities (P, N1, Qbar, expected error).
  
 ### Example command prompt line
