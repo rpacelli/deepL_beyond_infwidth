@@ -11,7 +11,7 @@ device = utils.find_device(args.device)
 home = utils.os.environ['HOME']
 
 #CREATION OF FOLDERS AND TEACHERS
-mother_dir = './runs/prova/'
+mother_dir = f'{home}/deepL_beyond_infwidth_runs/'
 utils.make_directory(mother_dir)
 first_subdir, run_folder = utils.make_folders(mother_dir, args)
 trainsetFilename = "temp"
