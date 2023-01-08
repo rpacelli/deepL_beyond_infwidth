@@ -19,7 +19,7 @@ if args.teacher_type == 'linear':
 	teacher_dir = f'{mother_dir}linear_teachers_trainsets/'
 	utils.make_directory(teacher_dir)
 	teacherFilename = f'{teacher_dir}/teacher_N_{args.N}.pt'
-	trainsetFilename = f'{teacher_dir}trainset_N_{args.N}_P_{args.P}_Ptest_{args.Ptest}.pt'
+	trainsetFilename = f'{teacher_dir}/trainset_N_{args.N}_P_{args.P}_Ptest_{args.Ptest}.pt'
 	teacher_class = teachers.linear_dataset()
 	teacher_class.resume = args.resume_data
 	teacher_class.make_teacher_parameters(args.N, teacherFilename)
