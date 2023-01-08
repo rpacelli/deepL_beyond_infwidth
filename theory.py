@@ -1,7 +1,5 @@
 from __future__ import print_function
-import os, os.path, sys, time, math
 import numpy as np
-import torch
 
 def k0(x,y,lambda0):
     N0 = len(x)
@@ -37,11 +35,10 @@ def kernel_relu(k0xx, k0xy, k0yy,lambda1):
         kappa = kappa1(u)
         return np.sqrt(k0xx*k0yy)*kappa
 
-def test_error(data, x,y,labels, lambda1, invK, Qbar,lambda0,kernel,L,device):
+def test_error(data,x,y,labels,lambda1,invK,Qbar,lambda0,kernel, L):
     P = len(data)
     k0xx = k0(x,x,lambda0)
-    k0yyvec = np.random.randn(P)
-    Kmu = np.random.randn(P)
+    k0yyvec, Kmu = np.random.randn(P), np.random.randn(P)
     for i in range(P):
         k0xy = k0(x,data[i],lambda0)
         k0yy = k0(data[i],data[i],lambda0)
@@ -63,14 +60,13 @@ def qbar(labels, invK, N1,lambda1):
     P = len(labels)
     alpha1 = P/N1
     yky = np.matmul(np.matmul(np.transpose(labels), invK), labels)
-    print(f'\ny K-1 y /P is {yky/P}')
+    print(f'\ny K^(-1) y /P is {yky/P}')
     return ((alpha1-1)-np.sqrt((alpha1-1)**2 + 4*alpha1*yky/(lambda1*P)))/2
 
-def compute_theory(data, labels, test_data, test_labels, N1, lambda1, P,Ptest,lambda0,act,L,device,infwidth):
-    data = data.detach().cpu()
-    labels = labels.detach().cpu()
-    test_data = test_data.detach().cpu()
-    test_labels = test_labels.detach().cpu()
+def compute_theory(data, labels, test_data, test_labels, N1, lambda1,lambda0,act,L,infwidth):
+    P = len(labels)
+    Ptest = len(test_labels)
+    data,labels, test_data, test_labels  = data.detach().cpu(),labels.detach().cpu(),test_data.detach().cpu(),test_labels.detach().cpu()
     K = CorrMat(P,data,lambda0)
     if act == "erf":
         kernel = kernel_erf
@@ -79,17 +75,14 @@ def compute_theory(data, labels, test_data, test_labels, N1, lambda1, P,Ptest,la
     for i in range(L):
         K = kmatrix(P,K,kernel,lambda1)
     invK = np.linalg.inv(K)
-    #invK = invK.to(device)
-    if infwidth:
-        Qbar = -1
-    else:
+    Qbar = -1
+    if not infwidth:
         Qbar = qbar(labels, invK, N1, lambda1)
     print(f"\nbar Q is {Qbar}")
     gen_error_pred = 0
     for p in range(Ptest):
         x = np.array(test_data[p])
         y = np.array(test_labels[p])
-        gen_error_pred += test_error(data, x, y, labels, lambda1, invK, Qbar,lambda0,kernel,L,device).item()
+        gen_error_pred += test_error(data, x, y, labels, lambda1, invK, Qbar,lambda0,kernel,L).item()
     gen_error_pred = gen_error_pred/Ptest
-    return gen_error_pred, Qbar
-
+    return gen_error_pred, Qbar.item()

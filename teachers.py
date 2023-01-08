@@ -1,6 +1,5 @@
 
-import torch, torch.nn as nn 
-import torchvision, torchvision.transforms as t   
+import torch, torchvision, torchvision.transforms as t   
 import numpy
 
 def save_data(inputs,targets,test_inputs,test_targets, trainsetFilename):
@@ -12,7 +11,6 @@ def save_data(inputs,targets,test_inputs,test_targets, trainsetFilename):
     	'test_targets': test_targets,
     }
     torch.save(state, trainsetFilename)
-
 
 class mnist_dataset: 
     def __init__(self,N):

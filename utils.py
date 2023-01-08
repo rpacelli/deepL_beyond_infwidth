@@ -1,9 +1,8 @@
 from __future__ import print_function
-import os, os.path,time
+import os, os.path,time,argparse
 import numpy as np
 import torch, torch.nn as nn
 import torch.backends.cudnn as cudnn
-import argparse 
 import torch.nn.init as init
 import torch.optim as optim
 
@@ -11,39 +10,32 @@ def parseArguments():
     parser = argparse.ArgumentParser()
     # Positional mandatory arguments
     parser.add_argument("teacher_type", help="choose a teacher type: linear,random, mnist", type=str)
-    #optional arguments
+    # Net arguments
     parser.add_argument("-L", help="number of hidden layers", type=int, default=1)
+    parser.add_argument("-N", "--N", help="size of input data", type=int, default=300)
+    parser.add_argument("-N1", "--N1", help="size ofh idden layer(s)", type=int, default=400)    
     parser.add_argument("-act", help="activation function", type=str, default="erf")
+    # Learning dynamics arguments
     parser.add_argument("-lr", "--lr", help="learning rate", type=float, default=1e-03)
     parser.add_argument("-wd", "--wd", help="weight decay", type=float, default=0.)
-    parser.add_argument("-resume_data", help="try resuming data from checkpoint", type=bool, default=True)    
+    parser.add_argument("-opt", "--opt", type=str, default="sgd") #or adam
     parser.add_argument("-device", "--device",  type=str, default="cuda")
     parser.add_argument("-epochs", "--epochs", help="number of train epochs", type = int, default = 10000)
+    parser.add_argument("-checkpoint", "--checkpoint", help="# epochs checkpoint", type=int, default=1000)
+    parser.add_argument("-R", "--R", help="replica index", type=int, default=1)
+    # Data specification
     parser.add_argument("-bs", "--bs", help="batch size", type=int, default=0)
     parser.add_argument("-P", "--P", help="size of training set", type=int, default=500)
-    #specify the networks you want to use 
-    parser.add_argument("-N", "--N", help="size of input data", type=int, default=300)
-    parser.add_argument("-N1", "--N1", help="size ofh idden layer(s)", type=int, default=400)
-    parser.add_argument("-Ptest", "--Ptest", help="# examples in test set", type=int, default=1000)
-    parser.add_argument("-opt", "--opt", type=str, default="sgd") #or adam
-    parser.add_argument("-R", "--R", help="replica index", type=int, default=1)
-    parser.add_argument("-checkpoint", "--checkpoint", help="# epochs checkpoint", type=int, default=1000)
+    parser.add_argument("-Ptest", "--Ptest", help="# examples in test set", type=int, default=1000)    
     parser.add_argument("-save_data", "--save_data", type = bool, default= True)
-    parser.add_argument("-lambda1", type = float, default= 1.)
-    parser.add_argument("-lambda0", type = float, default= 1.)
+    parser.add_argument("-resume_data", help="try resuming data from checkpoint", type=bool, default=True) 
+    # Theory computation
     parser.add_argument("-compute_theory", type = bool, default= False)
     parser.add_argument("-infwidth", help="compute infinite width theory", type = bool, default= False)
+    parser.add_argument("-lambda1", type = float, default= 1.)
+    parser.add_argument("-lambda0", type = float, default= 1.)
     args = parser.parse_args()
     return args
-
-
-def net_norm(net):
-	norm = 0
-	for l in range(len(net)):
-		with torch.no_grad():
-			if isinstance(l,nn.Linear):
-				norm += torch.norm(net[l].weight)**2
-	return norm 
 
 def train_prep(net, data, labels, batch_size):
     net.train()
@@ -54,11 +46,6 @@ def train_prep(net, data, labels, batch_size):
     data = data[s]
     labels = labels[s]
     return data, labels, batch_num
-
-
-    
-
-
 
 def train(net,data, labels, criterion, optimizer,batch_size):
     data, labels, batch_num = train_prep(net, data, labels, batch_size)
@@ -74,8 +61,6 @@ def train(net,data, labels, criterion, optimizer,batch_size):
         train_loss += loss.item() 
     return train_loss/batch_num
 
-
-
 def test(net, test_data, test_labels, criterion,  batch_size):
         net.eval()
         test_loss = 0
@@ -90,28 +75,11 @@ def test(net, test_data, test_labels, criterion,  batch_size):
                     test_loss += loss.item()
         return test_loss/batch_num
 
-def make_directory(dir_name):
-    if not os.path.isdir(dir_name): 
-	    os.mkdir(dir_name)
-
-
-#@profile
-def cuda_init(net, device):
-	net = net.to(device)
-	if device == 'cuda':
-		net = torch.nn.DataParallel(net)
-		cudnn.benchmark = True
-		CUDA_LAUNCH_BLOCKING=1
-	#print_stats()
-
-
 class Erf(torch.nn.Module):
     def __init__(self):
         super().__init__()
-
     def forward(self, x):
         return torch.erf(x)
-
 
 class make_MLP: 
     def __init__(self, N0, N1,  L,lambda1, lambda0):
@@ -120,25 +88,19 @@ class make_MLP:
         self.L = L
         self.lambda0 = lambda0
         self.lambda1 = lambda1
-
-
     def Sequential(self, bias, act_func):
         if act_func == "relu":
             act = nn.ReLU()
         elif act_func == "erf":
             act = Erf()
-
         std_0 = 1/np.sqrt(self.lambda0)
         std_1 = 1/np.sqrt(self.lambda1)
-
         modules = []
-
         first_layer = nn.Linear(self.N0, self.N1, bias=bias)
         init.normal_(first_layer.weight, std = std_0/np.sqrt(self.N0))
         if bias:
             init.constant_(first_layer.bias,0)
         modules.append(first_layer)
-
         for l in range(self.L-1): 
             modules.append(act)
             layer = nn.Linear(self.N1, self.N1, bias = bias)
@@ -146,19 +108,15 @@ class make_MLP:
             if bias:
                 init.constant_(layer.bias,0)
             modules.append(layer)
-
         modules.append(act)
         last_layer = nn.Linear(self.N1, 1, bias=bias)  
         init.normal_(last_layer.weight, std = std_1/np.sqrt(self.N1))  
         if bias:
                 init.constant_(last_layer.bias,0)
         modules.append(last_layer)
-
         sequential = nn.Sequential(*modules)
-        print(sequential)
+        print(f'\nThe network has {self.L} dense hidden layer(s) of size {self.N1} with {act_func} actviation function', sequential)
         return sequential
-
-
 
 def find_device(device):
     try:
@@ -170,3 +128,27 @@ def find_device(device):
         device ='cpu'
         print('\nWorking on', device)
     return device
+
+def cuda_init(net, device):
+    net = net.to(device)
+    if device == 'cuda':
+        net = torch.nn.DataParallel(net)
+        cudnn.benchmark = True
+        CUDA_LAUNCH_BLOCKING=1
+
+def make_directory(dir_name):
+    if not os.path.isdir(dir_name): 
+	    os.mkdir(dir_name)
+
+def make_folders(mother_dir, args):
+    #CREATION OF 2ND FOLDER WITH TEACHER & NETWORK SPECIFICATIONS
+    first_subdir = mother_dir + f'teacher_{args.teacher_type}_net_{args.L}hl_opt_{args.opt}_actf_{args.act}/'
+    make_directory(first_subdir)
+    #CREATION OF 3RD FOLDER WITH RUN SPECIFICATIONS
+    attributes_string = f'lr_{args.lr}_w_decay_{args.wd}_lambda0_{args.lambda0}_lambda1_{args.lambda1}_'
+    if args.bs != 0: 
+        attributes_string = attributes_string +f'bs_{args.bs}_'
+    attributes_string = attributes_string + f"{args.L}hl_N0_{args.N}_N_{args.N1}"
+    run_folder = first_subdir + attributes_string + '/'
+    make_directory(run_folder)
+    return first_subdir, run_folder
