@@ -44,8 +44,8 @@ The optional arguments that can be passed are:
 
 ### Code output
 
-```deep_regression.py``` will create folders and output files in the home folder. 
-Change ```mother_dir``` at line ```152``` if you want to modifiy the output folder. The default is ```/your_home_folder/deepL_beyond_infwidth/runs/``` The script will create folders and subfolders named after the arguments used.
+```deep_regression.py``` will create folders and output files in your home folder. 
+Change ```mother_dir``` at line ```14``` if you want to modifiy the output folder. The default is ```/your_home_folder/deepL_beyond_infwidth_runs/``` The script will create folders and subfolders named after the arguments used.
 The script will output a file ```run_P_(value_of_P)_(run_attributes)``` (in the aforementioned folders) with the specifications of the single run (epoch, train error, test error), and if prompted will also produce a file with the theoretical expected quantities (P, N1, Qbar, expected error).
  
 ### Example command prompt line
