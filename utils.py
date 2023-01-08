@@ -19,7 +19,7 @@ def parseArguments():
     parser.add_argument("-lr", "--lr", help="learning rate", type=float, default=1e-03)
     parser.add_argument("-wd", "--wd", help="weight decay", type=float, default=0.)
     parser.add_argument("-opt", "--opt", type=str, default="sgd") #or adam
-    parser.add_argument("-device", "--device",  type=str, default="cuda")
+    parser.add_argument("-device", "--device",  type=str, default="cpu")
     parser.add_argument("-epochs", "--epochs", help="number of train epochs", type = int, default = 10000)
     parser.add_argument("-checkpoint", "--checkpoint", help="# epochs checkpoint", type=int, default=1000)
     parser.add_argument("-R", "--R", help="replica index", type=int, default=1)

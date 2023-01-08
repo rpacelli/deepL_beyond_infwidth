@@ -18,10 +18,11 @@ class mnist_dataset:
         self.save_data = bool("NaN")
     def make_data(self, P,P_test, trainsetFilename, device):
         self.transform_dataset = t.Compose([
-        t.ToTensor(),
         t.Normalize((0.1307, ),(0.3081, ) ),
+        t.Lambda(lambda x: torch.flatten(x)),
+        t.ToPILImage(),
         t.Resize(size = int(numpy.sqrt(self.N))), 
-        t.Lambda(lambda x: torch.flatten(x))         
+        t.ToTensor()         
         ])
         trainset = torchvision.datasets.MNIST(
         root='./data', train=True, download=True, transform=self.transform_dataset)

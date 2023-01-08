@@ -85,4 +85,4 @@ def compute_theory(data, labels, test_data, test_labels, N1, lambda1,lambda0,act
         y = np.array(test_labels[p])
         gen_error_pred += test_error(data, x, y, labels, lambda1, invK, Qbar,lambda0,kernel,L).item()
     gen_error_pred = gen_error_pred/Ptest
-    return gen_error_pred, Qbar.item()
+    return gen_error_pred, Qbar
