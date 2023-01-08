@@ -9,7 +9,7 @@ The script to be run is ```deep_regression.py```.
 The **mandatory** argument that must passed to ```deep_regression.py```is the **teacher type**. This is the function that will generate the input-output distribution. It can be chosen among: 
   - ```linear``` (linear function) 
   - ```random``` (random data and labels)
-  - ```mnist``` (MNIST dataset of handwritten digits)
+  - ```mnist``` (binarised MNIST dataset of handwritten digits)
   
 
 The optional arguments that can be passed are: 
