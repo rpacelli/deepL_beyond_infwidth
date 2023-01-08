@@ -24,7 +24,7 @@ The optional arguments that can be passed are:
   - ```-Ptest``` (size of the test set) 
   - ```-bs``` (batch size, set to 0 for full batch learning)
   - ```-save_data``` (saves the generate synthetic data distribution) 
-  - ```-resume``` (set true if you wish to resume training data from previous experiments)
+  - ```-resume_data``` (set true if you wish to resume training data from previous experiments)
   
   Training dynamics and checkpoint:
   - ```-opt``` (choose among adam, sgd)
@@ -38,7 +38,8 @@ The optional arguments that can be passed are:
   Theory computation:
   - ```-compute_theory``` (set true to compute theory with the specified trainset (resumed, synthetic or mnist))
   - ```-infwidth``` (set true to compute infinite width theory, the default value is False that will trigger the computation of finite-width theory)
-  
+  - ```-lambda0``` (inverse of squared variance of 1st layer weight at initialisation)
+  - ```-lambda1``` (inverse of squared variance of intermediate layer(s) weight at initialisation)
 
 
 ### Code output
