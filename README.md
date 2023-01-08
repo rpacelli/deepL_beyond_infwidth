@@ -32,7 +32,7 @@ The optional arguments that can be passed are:
   - ```-wd``` (weight decay)
   - ```-epochs``` (number training epochs)
   - ```-checkpoint``` (number of epochs between two checkpoints. at every checkpoint the errors appear at screen and are saved)
-  - ```-device``` (chose the device among cuda and cpu. If cuda (default) is not found the coda will be automatically run on cpu)
+  - ```-device``` (chose the device among cuda and cpu. Default is cpu)
   - ```-R``` (a run index. the default value is 0, you can change it if you want more than one run with the same parameters)
   
   Theory computation:
