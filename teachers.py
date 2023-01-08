@@ -17,9 +17,6 @@ def save_data(inputs,targets,test_inputs,test_targets, trainsetFilename):
 class mnist_dataset: 
     def __init__(self,N):
         self.N = N
-        self.P = float("NaN")
-        self.P_test = float("NaN")
-        self.batch_size = float("NaN")
         self.save_data = bool("NaN")
     def make_data(self, P,P_test, trainsetFilename, device):
         self.transform_dataset = t.Compose([
@@ -54,7 +51,7 @@ class linear_dataset:
             if not self.resume:
                 raise(Exception)
         except:
-            print("\nDidn't find a teacher, creating new one")
+            print("\nDidn't find a teacher, creating new one...")
             self.teacher_vec = torch.randn(N)
             torch.save(self.teacher_vec, teacherFilename)
         self.N = N

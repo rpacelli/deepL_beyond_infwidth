@@ -1,6 +1,6 @@
 import utils, teachers 
 import torch.nn as nn
-from theory import compute_theory
+from theory_np import compute_theory
 import os 
 
 start_time = utils.time.time()
@@ -15,14 +15,14 @@ device = utils.find_device(args.device)
 home = utils.os.environ['HOME']
 trainsetFilename = "dummy"
 #CREATION OF MACRO FOLDERS
-mother_dir = './deepL_beyond_infwidth/runs/'
+mother_dir = './runs/prova/'
 utils.make_directory(mother_dir)
 first_subdir = mother_dir + f'teacher_{args.teacher_type}_net_{args.L}hl_opt_{args.opt}_actf_{args.act}/'
 utils.make_directory(first_subdir)
 theoryFilename = f"{first_subdir}theory_N_{args.N}_lambda0_{args.lambda0}_lambda1_{args.lambda1}.txt"
 if not os.path.isfile(theoryFilename):
 	f = open(theoryFilename,"a")
-	print('#P', 'N1', 'Qbar', 'pred error', file = f)
+	print('#1P', '2 N1', '3 Qbar', '4 pred error', file = f)
 	f.close()
 #CREATION OF FOLDERS
 attributes_string = f'lr_{args.lr}_w_decay_{args.wd}_lambda0_{args.lambda0}_lambda1_{args.lambda1}_'
@@ -53,21 +53,20 @@ if args.bs == 0:
 else: 
 	batch_size_train = args.bs
 	batch_size_test = args.bs
-teacher_class.batch_size = batch_size_train
 
 #CRREATION OF DADTASET AND THEORY CALCULATION
 inputs, targets, test_inputs, test_targets, resumed = teacher_class.make_data(args.P, args.Ptest, trainsetFilename, device)
-inputs, targets, test_inputs, test_targets = inputs.to(device), targets.to(device), test_inputs.to(device), test_targets.to(device),
 
 if args.compute_theory:
 	start_time = utils.time.time()
-	gen_error_pred, Qbar = compute_theory(inputs, targets, test_inputs, test_targets, args.N1, args.lambda1, args.P, args.Ptest, args.lambda0,args.act,args.L,args.device,args.infwidth)
+	gen_error_pred, Qbar = compute_theory(inputs, targets, test_inputs, test_targets, args.N1, args.lambda1, args.lambda0,args.act,args.L,args.device,args.infwidth)
 	f = open(theoryFilename, "a")
 	print(args.P,args.N1,Qbar, gen_error_pred, file = f)
 	f.close()
-	print(f"\nPredicted error is: {gen_error_pred} \nTheory computation took - {utils.time.time() - start_time} seconds -")
+	print(f"\nPredicted error is: {gen_error_pred} \n theory computation took - {utils.time.time() - start_time} seconds -")
 	start_time = utils.time.time()
 
+inputs, targets, test_inputs, test_targets = inputs.to(device), targets.to(device), test_inputs.to(device), test_targets.to(device)
 #NET INITIALISATION
 net_class = utils.make_MLP(args.N, args.N1, args.L, args.lambda1, args.lambda0)
 bias = False
