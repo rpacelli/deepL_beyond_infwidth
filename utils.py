@@ -16,7 +16,7 @@ def parseArguments():
     parser.add_argument("-act", help="activation function", type=str, default="erf")
     parser.add_argument("-lr", "--lr", help="learning rate", type=float, default=1e-03)
     parser.add_argument("-wd", "--wd", help="weight decay", type=float, default=0.)
-    parser.add_argument("-resume_data", help="try resuming data from checkpoint", type=bool, default=False)    
+    parser.add_argument("-resume_data", help="try resuming data from checkpoint", type=bool, default=True)    
     parser.add_argument("-device", "--device",  type=str, default="cuda")
     parser.add_argument("-epochs", "--epochs", help="number of train epochs", type = int, default = 10000)
     parser.add_argument("-bs", "--bs", help="batch size", type=int, default=0)

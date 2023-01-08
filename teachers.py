@@ -50,11 +50,11 @@ class linear_dataset:
     def make_teacher_parameters(self, N, teacherFilename):
         try:
             self.teacher_vec = torch.load(teacherFilename)
-            print("\nloading teacher")
+            print("\nLoading teacher")
             if not self.resume:
                 raise(Exception)
         except:
-            print("\ndidn't find a teacher, creating new one")
+            print("\nDidn't find a teacher, creating new one")
             self.teacher_vec = torch.randn(N)
             torch.save(self.teacher_vec, teacherFilename)
         self.N = N
@@ -64,7 +64,7 @@ class linear_dataset:
             if self.resume: 
                 loaded = torch.load(trainsetFilename, map_location=torch.device(device))
                 inputs, targets, test_inputs, test_targets = loaded['inputs'], loaded['targets'], loaded['test_inputs'],loaded['test_targets']
-                print("\ntrainset was loaded from checkpoint")
+                print("\nTrainset was loaded from checkpoint")
                 resume_status = True  
             else:
                 raise Exception()
