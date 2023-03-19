@@ -1,5 +1,6 @@
 import utils, teachers 
 from theory import compute_theory
+from theory import CorrMat, kmatrix, kernel_erf
 
 start_time = utils.time.time()
 args = utils.parseArguments()
@@ -24,31 +25,22 @@ if args.teacher_type == 'linear':
 	teacher_class.resume = args.resume_data
 	teacher_class.make_teacher_parameters(args.N, teacherFilename)
 elif args.teacher_type == 'mnist': 
-	teacher_class = teachers.mnist_dataset(args.N)
+	teacher_class = teachers.MNISTDataset(args.N)
 elif args.teacher_type == 'random': 
 	teacher_class = teachers.random_dataset(args.N)
 teacher_class.save_data = args.save_data
 
-#CRREATION OF DADTASET AND THEORY CALCULATION
+#DEFINE AND INITIALISE NET
+bias = False
+net_class = utils.ConvNet(args.K, args.f, args.L, args.lambda1, args.lambda0)
+net = net_class.Sequential(1, int(utils.np.sqrt(args.N)), args.stride, bias, args.act)
+utils.cuda_init(net, device)
+
+#CRREATION OF DADTASET 
 inputs, targets, test_inputs, test_targets, resumed = teacher_class.make_data(args.P, args.Ptest, trainsetFilename, device)
-theoryFilename = f"{first_subdir}theory_N_{args.N}_lambda0_{args.lambda0}_lambda1_{args.lambda1}.txt"
-if not utils.os.path.isfile(theoryFilename):
-	with open(theoryFilename,"a") as f:
-		print('#1P', '2 N1', '3 Qbar', '4 pred error', file = f)
-if args.compute_theory:
-	start_time = utils.time.time()
-	gen_error_pred, Qbar = compute_theory(inputs, targets, test_inputs, test_targets, args.N1, args.lambda1, args.lambda0,args.act,args.L,args.infwidth)
-	with open(theoryFilename, "a") as f:
-		print(args.P,args.N1,Qbar, gen_error_pred, file = f)
-	print(f"\nPredicted error is: {gen_error_pred} \n theory computation took - {utils.time.time() - start_time} seconds -")
-	start_time = utils.time.time()
 inputs, targets, test_inputs, test_targets = inputs.to(device), targets.to(device), test_inputs.to(device), test_targets.to(device)
 
-#NET INITIALISATION
-net_class = utils.make_MLP(args.N, args.N1, args.L, args.lambda1, args.lambda0)
-bias = False
-net = net_class.Sequential(bias, args.act)
-utils.cuda_init(net, device)	
+	
 
 #TRAINING DYNAMICS SPECIFICATION
 if args.opt == 'adam': 
@@ -65,6 +57,20 @@ test_args = [net,test_inputs,test_targets,criterion,batch_size_test]
 training = utils.train
 testing = utils.test
 
+smallnet = net[0:3]
+print(smallnet)
+feature_vec = net(test_inputs)
+print(len(feature_vec))
+#assert len(feature_vec)==features
+Kstart = CorrMat(feature_vec,args.lambda0)
+kfile = "conv_start_kernel.txt"
+with open(kfile,"a") as f:
+    for i in range(args.Ptest):
+        for j in range(args.Ptest):
+            print(Kstart[i][j], end=" ", file = f)
+        print("\n", end = "",file = f)
+
+
 #RUN DYNAMICS
 runFilename = f'{run_folder}run_P_{args.P}_replica_{args.R}.txt'
 if not utils.os.path.exists(runFilename):
@@ -73,11 +79,39 @@ if not utils.os.path.exists(runFilename):
 sourceFile = open(runFilename, 'a')
 for epoch in range(args.epochs):
 	train_loss = training(*train_args)
-	test_loss = testing(*test_args)
-	print(epoch, train_loss, test_loss, file = sourceFile)
+	#test_loss = testing(*test_args)
+	print(epoch, train_loss, " ", file = sourceFile)
 	if epoch % args.checkpoint == 0 or epoch == args.epochs-1 :
+		test_loss = testing(*test_args)
+		print(epoch, train_loss, test_loss, file = sourceFile)
 		sourceFile.close()
 		sourceFile = open(runFilename, 'a')
 		print(f'\nEpoch: {epoch} \nTrain error: {train_loss} \nTest error: {test_loss} \n training took --- {utils.time.time() - start_time} seconds ---')				
 		start_time = utils.time.time()	
 sourceFile.close()
+
+with utils.torch.no_grad():
+	
+	acts = net[-1]
+	print(acts)
+	features = len(acts.weight.flatten())
+	print(f"\n features in the last layer: {features}")
+	net = net[0:3]
+	print(net)
+	feature_vec = net(test_inputs)
+	print(len(feature_vec))
+	#assert len(feature_vec)==features
+	Kend = CorrMat(feature_vec,args.lambda0)
+	kfile = "conv_end_kernel.txt"
+	with open(kfile,"a") as f:
+	    for i in range(args.Ptest):
+	        for j in range(args.Ptest):
+	            print(Kend[i][j], end=" ", file = f)
+	        print("\n", end = "",file = f)
+
+	kfilediff = "conv_diff.txt"
+	with open(kfilediff,"a") as f:
+	    for i in range(args.Ptest):
+	        for j in range(args.Ptest):
+	            print(Kend[i][j]/K[i][j], end=" ", file = f)
+	        print("\n", end = "",file = f)

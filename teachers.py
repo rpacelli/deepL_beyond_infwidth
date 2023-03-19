@@ -1,6 +1,6 @@
 
 import torch, torchvision, torchvision.transforms as t   
-import numpy
+import numpy as np
 
 def save_data(inputs,targets,test_inputs,test_targets, trainsetFilename):
     print('\nSaving data...')
@@ -12,31 +12,38 @@ def save_data(inputs,targets,test_inputs,test_targets, trainsetFilename):
     }
     torch.save(state, trainsetFilename)
 
-class mnist_dataset: 
-    def __init__(self,N):
+class MNISTDataset:
+    def __init__(self, N):
         self.N = N
         self.save_data = bool("NaN")
-    def make_data(self, P,P_test, trainsetFilename, device):
-        self.transform_dataset = t.Compose([
-        t.Normalize((0.1307, ),(0.3081, ) ),
-        t.Lambda(lambda x: torch.flatten(x)),
-        t.ToPILImage(),
-        t.Resize(size = int(numpy.sqrt(self.N))), 
-        t.ToTensor()         
+
+    def _get_transforms(self):
+        T = t.Compose([
+            t.Resize(size=int(np.sqrt(self.N))),
+            t.ToTensor(),
+            t.Normalize((0.1307,), (0.3081,)),
+            #t.Lambda(lambda x: torch.flatten(x)) in case you have to flatten
         ])
-        trainset = torchvision.datasets.MNIST(
-        root='./data', train=True, download=True, transform=self.transform_dataset)
-        trainset_small = torch.utils.data.Subset(trainset,  list(range(P)))
-        data,labels,test_data,test_labels = [], [],[], []
-        for i in range(P):
-            data.append(trainset_small[i][0])
-            labels.append(torch.sign((torch.tensor(trainset_small[i][1]) - 4.5))/10)
-        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=self.transform_dataset)
+        return T
+
+    def make_data(self, P, P_test, trainsetFilename, device):
+        transform_dataset = self._get_transforms()
+
+        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_dataset)
+        trainset_small = torch.utils.data.Subset(trainset, list(range(P)))
+        trainloader = torch.utils.data.DataLoader(trainset_small, batch_size=P, num_workers=4)
+
+        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform_dataset)
         testset_small = torch.utils.data.Subset(testset, list(range(P_test)))
-        for i in range(P_test):
-            test_data.append(testset_small[i][0])
-            test_labels.append(torch.sign((torch.tensor(testset_small[i][1])- 4.5))/10)
-        return  torch.stack(data), torch.stack(labels),torch.stack(test_data),torch.stack(test_labels), False
+        testloader = torch.utils.data.DataLoader(testset_small, batch_size=P_test, num_workers=4)
+
+        data, labels = next(iter(trainloader))
+        labels = (torch.sign(labels.float() - 4.5)).view(-1, 1)
+        
+        test_data, test_labels = next(iter(testloader))
+        test_labels = (torch.sign(test_labels.float() - 4.5)).view(-1, 1)
+
+        return data, labels, test_data, test_labels, False
 
 class linear_dataset: 
     def __init__(self):
