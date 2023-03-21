@@ -10,10 +10,11 @@ def parseArguments():
     parser = argparse.ArgumentParser()
     # Positional mandatory arguments
     parser.add_argument("teacher_type", help="choose a teacher type: linear,random, mnist", type=str)
-    
+    parser.add_argument("-net", help="choose a net type: fully connected (fc) and convolutional (conv)", type=str, default = "conv")
     # Net arguments
     parser.add_argument("-L", help="number of hidden layers", type=int, default=1)
     parser.add_argument("-N", "--N", help="size of input data", type=int, default=400)
+    parser.add_argument("-N1", "--N1", help="size of hidden layer if the net is fc", type=int, default=700)
     parser.add_argument("-K", "--K", help="number of filters", type=int, default=5) 
     parser.add_argument("-f", "--f", help="size of filter", type=int, default=3) 
     parser.add_argument("-stride", "--stride", help="stride", type=int, default=1)      
@@ -52,6 +53,7 @@ def train_prep(net, data, labels, batch_size):
 
 def train(net,data, labels, criterion, optimizer,batch_size,norm):
     data, labels, batch_num = train_prep(net, data, labels, batch_size)
+    #print(labels[1])
     train_loss = 0
     for i in range(batch_num):
         start = i*(batch_size)
@@ -82,7 +84,6 @@ def test(net, test_data, test_labels, criterion,  batch_size,norm):
                     signs /= abs(signs)
                     signs +=1
                     loss = torch.count_nonzero(signs)/batch_size
-                    print("loss is ", loss)
                     #loss = criterion(outputs, targets) 
                     test_loss += loss.item()                    
         return test_loss/batch_num
@@ -116,7 +117,7 @@ class ConvNet:
 
         # First convolutional layer
         first_layer = nn.Conv2d(input_channels, self.K, self.f, bias=bias)
-        init.normal_(first_layer.weight, std=std_0)
+        init.normal_(first_layer.weight, std=1)
        # init.normal_(first_layer.weight, std=std_0/np.sqrt(input_channels * self.f * self.f))
         if bias:
             init.constant_(first_layer.bias, 0)
@@ -125,7 +126,7 @@ class ConvNet:
         # Additional L-1 convolutional layers
         for l in range(self.L - 1):
             layer = nn.Conv2d(self.K, self.K, self.f, bias=bias)
-            init.normal_(layer.weight, std=std_1)
+            init.normal_(layer.weight, std=1)
             #init.normal_(layer.weight, std=std_1/np.sqrt(self.K * self.f * self.f))
             if bias:
                 init.constant_(layer.bias, 0)
@@ -145,14 +146,14 @@ class ConvNet:
 
         # Fully connected layer
         last_layer = nn.Linear(FC_params, 1, bias=bias)
-        init.normal_(last_layer.weight, std=std_1)
+        init.normal_(last_layer.weight, std=1)
         if bias:
             init.constant_(last_layer.bias, 0)
         modules.append(last_layer)
 
         sequential = nn.Sequential(*modules)
         print(f'\nThe network has {self.L} convolutional hidden layer(s) with {self.K} kernels of size {self.f} and {act_func} activation function', sequential)
-        return sequential, 1/np.sqrt(FC_params*input_size)
+        return sequential, std_0*std_1/np.sqrt(FC_params*input_size)
 
 
 def find_device(device):
@@ -209,7 +210,7 @@ def Conv_ker(data,norm):
     C = np.zeros((P,P))
     for i in range(P): 
         for j in range(i,P):         
-            C[i][j] = torch.mean(data[i]*data[j])/norm
+            C[i][j] = np.mean(data[i]*data[j])*norm
             C[j][i] = C[i][j]
     return C  
 
@@ -224,3 +225,64 @@ def kmatrix(C,kernel,lambda1):
 
 def kernel_erf(k0xx,k0xy,k0yy,lambda1):
     return (2/(lambda1*np.pi))*np.arcsin((2*k0xy)/np.sqrt((1+2*k0xx)*(1+2*k0yy)))
+
+
+def make_smallnet(net,inputs,K):
+    with torch.no_grad():
+        smallnet = net[0:-1]
+        post_acts = np.array(smallnet(inputs).detach().cpu())
+        last_layer = net[-1]
+        weights = np.array(last_layer.weight.flatten().detach().cpu())
+        output_size= len(weights)//K
+        side_size = int(np.sqrt(output_size))
+        print("out size is ", f"{side_size}x{side_size}")
+    return post_acts, weights, output_size
+
+
+def save_data(inputs,targets,test_inputs,test_targets, trainsetFilename):
+    print('\nSaving data...')
+    state = {
+    	'inputs': inputs,
+    	'targets': targets,
+        'test_inputs': test_inputs,
+    	'test_targets': test_targets,
+    }
+    torch.save(state, trainsetFilename)
+
+class FCNet: 
+    def __init__(self, N0, N1,  L,lambda1, lambda0):
+        self.N0 = N0 
+        self.N1 = N1
+        self.L = L
+        self.lambda0 = lambda0
+        self.lambda1 = lambda1
+    def Sequential(self, bias, act_func):
+        if act_func == "relu":
+            act = nn.ReLU()
+        elif act_func == "erf":
+            act = Erf()
+        std_0 = 1/np.sqrt(self.lambda0)
+        std_1 = 1/np.sqrt(self.lambda1)
+        modules = []
+        first_layer = nn.Linear(self.N0, self.N1, bias=bias)
+        init.normal_(first_layer.weight, std = 1)
+        if bias:
+            init.constant_(first_layer.bias,0)
+        modules.append(first_layer)
+        for l in range(self.L-1): 
+            modules.append(act)
+            layer = nn.Linear(self.N1, self.N1, bias = bias)
+            init.normal_(layer.weight, std = 1)
+            if bias:
+                init.constant_(layer.bias,0)
+            modules.append(layer)
+        modules.append(act)
+        #modules.append(nn.Flatten())
+        last_layer = nn.Linear(self.N1, 1, bias=bias)  
+        init.normal_(last_layer.weight, std = 1)  
+        if bias:
+                init.constant_(last_layer.bias,0)
+        modules.append(last_layer)
+        sequential = nn.Sequential(*modules)
+        print(f'\nThe network has {self.L} dense hidden layer(s) of size {self.N1} with {act_func} actviation function', sequential)
+        return sequential

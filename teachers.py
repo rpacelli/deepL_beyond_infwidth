@@ -13,9 +13,10 @@ def save_data(inputs,targets,test_inputs,test_targets, trainsetFilename):
     torch.save(state, trainsetFilename)
 
 class MNISTDataset:
-    def __init__(self, N):
+    def __init__(self, N,conv):
         self.N = N
         self.save_data = bool("NaN")
+        self.conv = conv
 
     def _get_transforms(self):
         T = t.Compose([
@@ -24,6 +25,9 @@ class MNISTDataset:
             t.Normalize((0.1307,), (0.3081,)),
             #t.Lambda(lambda x: torch.flatten(x)) in case you have to flatten
         ])
+        if not self.conv:
+            T = t.Compose([T,
+            t.Lambda(lambda x: torch.flatten(x))])
         return T
 
     def make_data(self, P, P_test, trainsetFilename, device):
@@ -31,11 +35,11 @@ class MNISTDataset:
 
         trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_dataset)
         trainset_small = torch.utils.data.Subset(trainset, list(range(P)))
-        trainloader = torch.utils.data.DataLoader(trainset_small, batch_size=P, num_workers=4)
+        trainloader = torch.utils.data.DataLoader(trainset_small, batch_size=P, num_workers=1)
 
         testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform_dataset)
         testset_small = torch.utils.data.Subset(testset, list(range(P_test)))
-        testloader = torch.utils.data.DataLoader(testset_small, batch_size=P_test, num_workers=4)
+        testloader = torch.utils.data.DataLoader(testset_small, batch_size=P_test, num_workers=1)
 
         data, labels = next(iter(trainloader))
         labels = (torch.sign(labels.float() - 4.5)).view(-1, 1)
